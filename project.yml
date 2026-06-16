@@ -1,0 +1,68 @@
+name: QuickNFO
+options:
+  bundleIdPrefix: com.rs2pt
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "2.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    PRODUCT_NAME: "$(TARGET_NAME)"
+
+targets:
+  QuickNFO:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - path: Resources/LICENSE-FONT.txt
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rs2pt.QuickNFO
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/App.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - target: PreviewExtension
+      - target: ThumbnailExtension
+
+  PreviewExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - PreviewExtension
+      - Shared
+      - path: Resources/WebPlus_IBM_VGA_9x16.woff
+        buildPhase: resources
+      - path: Resources/PxPlus_IBM_VGA_9x16.ttf
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rs2pt.QuickNFO.PreviewExtension
+        INFOPLIST_FILE: PreviewExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: PreviewExtension/PreviewExtension.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+
+  ThumbnailExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - ThumbnailExtension
+      - Shared
+      - path: Resources/PxPlus_IBM_VGA_9x16.ttf
+        buildPhase: resources
+      - path: Resources/WebPlus_IBM_VGA_9x16.woff
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rs2pt.QuickNFO.ThumbnailExtension
+        INFOPLIST_FILE: ThumbnailExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ThumbnailExtension/ThumbnailExtension.entitlements
+        GENERATE_INFOPLIST_FILE: NO

@@ -1,0 +1,9 @@
+Embedded font: PxPlus / WebPlus IBM VGA 9x16
+From the "Ultimate Oldschool PC Font Pack" v2.2 by VileR
+https://int10h.org/oldschool-pc-fonts/
+
+Licensed under Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/
+
+The fonts are bundled unmodified inside this application's Quick Look
+extensions for rendering NFO files.
