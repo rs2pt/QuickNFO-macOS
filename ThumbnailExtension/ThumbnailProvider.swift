@@ -35,6 +35,14 @@ class ThumbnailProvider: QLThumbnailProvider {
         var lines = text.replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
             .components(separatedBy: "\n")
+        // Trim blank leading/trailing lines so the art centers on its content.
+        while let first = lines.first, first.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeFirst()
+        }
+        while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeLast()
+        }
+        guard !lines.isEmpty else { return }
         if lines.count > maxLines { lines = Array(lines.prefix(maxLines)) }
         let maxCols = max(lines.map { $0.count }.max() ?? 1, 1)
 
@@ -42,41 +50,40 @@ class ThumbnailProvider: QLThumbnailProvider {
         let availW = size.width - inset * 2
         let availH = size.height - inset * 2
 
-        // Measure the font's advance at a reference size to derive an exact
-        // font size that fits `maxCols` columns into the available width, then
-        // cap it so `lines.count` rows also fit the height.
+        // Measure the font's advance at a reference size to derive the advance
+        // per point of font size, then pick the largest font size that fits both
+        // the widest column and all the rows.
         let refSize: CGFloat = 32
         guard let refFont = FontLoader.thumbnailFont(size: refSize) else { return }
-        let advance = monospaceAdvance(refFont)
-        guard advance > 0 else { return }
+        let refAdvance = monospaceAdvance(refFont)
+        guard refAdvance > 0 else { return }
+        let advanceRatio = refAdvance / refSize
 
-        var fontSize = (availW / CGFloat(maxCols)) * refSize / advance
-        let lineHeightRatio: CGFloat = 1.0 // bitmap font: line box == em
-        let maxByHeight = availH / (CGFloat(lines.count) * lineHeightRatio)
-        fontSize = min(fontSize, maxByHeight)
+        var fontSize = availW / (CGFloat(maxCols) * advanceRatio)
+        fontSize = min(fontSize, availH / CGFloat(lines.count))
         fontSize = max(fontSize, 1)
 
         guard let font = FontLoader.thumbnailFont(size: fontSize) else { return }
+        let advance = advanceRatio * fontSize
+        let blockW = CGFloat(maxCols) * advance
+        let blockH = CGFloat(lines.count) * fontSize
 
-        let attr = NSMutableAttributedString()
-        let textColor = CGColor(red: 0.78, green: 0.78, blue: 0.78, alpha: 1)
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineBreakMode = .byClipping
-        paragraph.maximumLineHeight = fontSize
-        paragraph.minimumLineHeight = fontSize
+        // Center the whole block; every line shares originX so the ASCII art
+        // alignment is preserved (left-aligned within a centered block).
+        let originX = (size.width - blockW) / 2
+        let topY = (size.height + blockH) / 2   // top edge of the block (CG coords)
+        let ascent = CTFontGetAscent(font)
 
-        let joined = lines.joined(separator: "\n")
-        attr.append(NSAttributedString(string: joined, attributes: [
-            .font: font,
-            .foregroundColor: textColor,
-            .paragraphStyle: paragraph,
-        ]))
+        let textColor = CGColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: textColor]
 
-        let framesetter = CTFramesetterCreateWithAttributedString(attr)
-        let textRect = CGRect(x: inset, y: inset, width: availW, height: availH)
-        let path = CGPath(rect: textRect, transform: nil)
-        let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: 0), path, nil)
-        CTFrameDraw(frame, ctx)
+        ctx.textMatrix = .identity
+        for (i, lineStr) in lines.enumerated() where !lineStr.isEmpty {
+            let line = CTLineCreateWithAttributedString(
+                NSAttributedString(string: lineStr, attributes: attrs))
+            ctx.textPosition = CGPoint(x: originX, y: topY - ascent - CGFloat(i) * fontSize)
+            CTLineDraw(line, ctx)
+        }
     }
 
     /// Horizontal advance of a representative glyph at the font's size.

@@ -6,3 +6,6 @@ build/
 DerivedData/
 *.xcuserstate
 .DS_Store
+
+# Local test NFOs (not ours to redistribute)
+examples/
